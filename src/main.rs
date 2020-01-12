@@ -4,11 +4,18 @@
 #[macro_use] extern crate serde_derive;
 
 use rocket_contrib::templates::Template;
+use rocket::request::Form;
 
 #[derive(Serialize)]
 struct TemplateContext {
 	x: f64,
 	y: f64,
+}
+
+#[derive(FromForm, Debug)]
+struct Data {
+	station: String,
+	rssi: f64,
 }
 
 fn newton_raphson(x: f64, y: f64, r1: f64, r2: f64, eps: f64) -> (f64, f64) {
@@ -93,9 +100,16 @@ fn index() -> Template {
 	Template::render("index", &context)
 }
 
+#[post("/sigfox", format = "application/x-www-form-urlencoded", data= "<data>")]
+fn data(data: Option<Form<Data>>) {
+	if let Some(data) = data {
+		println!("{:?}", data);
+	}
+}
+
 fn rocket() -> rocket::Rocket {
 	rocket::ignite()
-		.mount("/", routes![index])
+		.mount("/", routes![index, data])
 		.attach(Template::fairing())
 }
 
