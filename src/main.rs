@@ -2,9 +2,12 @@
 
 #[macro_use] extern crate rocket;
 #[macro_use] extern crate serde_derive;
+extern crate rusqlite;
 
 use rocket_contrib::templates::Template;
 use rocket::request::Form;
+use rusqlite::Connection;
+use rusqlite::NO_PARAMS;
 
 #[derive(Serialize)]
 struct TemplateContext {
@@ -89,12 +92,18 @@ fn get_position(r1: f64, r2: f64, r3: f64, eps: f64) -> (f64, f64) {
 	}
 }
 
+fn distance(rssi: f64) -> f64 {
+	return -1.35 * rssi - 70.67;
+}
+
 #[get("/")]
 fn index() -> Template {
 	// CONTEXT
 	let context = TemplateContext {
-		x: 48.8534,
-		y: 2.3488,
+		// x: 48.8534,
+		// y: 2.3488,
+		x: 48.79217442020529,
+		y: 2.402670292855805,
 	};
 	// RENDERING
 	Template::render("index", &context)
@@ -104,6 +113,30 @@ fn index() -> Template {
 fn data(data: Option<Form<Data>>) {
 	if let Some(data) = data {
 		println!("{:?}", data);
+		println!("{:?}", data.station);
+		let conn = Connection::open("data.db").expect("data.db cannot be found.");
+
+		match data.station.as_ref() {
+			"26AB" => {
+				conn.execute(&format!("INSERT INTO _26AB (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance(data.rssi)), NO_PARAMS).unwrap();
+			}
+			"87D9" => {
+				conn.execute(&format!("INSERT INTO _87D9 (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance(data.rssi)), NO_PARAMS).unwrap();
+			}
+			"B7E2" => {
+				conn.execute(&format!("INSERT INTO _B7E2 (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance(data.rssi)), NO_PARAMS).unwrap();
+			}
+			"0DD2" => {
+				conn.execute(&format!("INSERT INTO _0DD2 (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance(data.rssi)), NO_PARAMS).unwrap();
+			}
+			"0DE2" => {
+				conn.execute(&format!("INSERT INTO _0DE2 (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance(data.rssi)), NO_PARAMS).unwrap();
+			}
+			"0DE7" => {
+				conn.execute(&format!("INSERT INTO _0DE7 (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance(data.rssi)), NO_PARAMS).unwrap();
+			}
+			_ => {}
+		}
 	}
 }
 
