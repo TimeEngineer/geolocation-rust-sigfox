@@ -5,6 +5,7 @@
 extern crate rusqlite;
 
 use rocket_contrib::templates::Template;
+use rocket_contrib::serve::StaticFiles;
 use rocket::request::Form;
 use rusqlite::Connection;
 use rusqlite::NO_PARAMS;
@@ -99,15 +100,25 @@ fn distance(rssi: f64) -> f64 {
 #[get("/")]
 fn index() -> Template {
 	// CONTEXT
+	// x : 0 ~ 750.0 == MIN ~ MAX
+	// y : 0 ~ 285.0 == MIN ~ MAX
+	// 50 pixels = 1 meter
+
 	let context = TemplateContext {
 		// x: 48.8534,
 		// y: 2.3488,
-		x: 48.79217442020529,
-		y: 2.402670292855805,
+		x: 50.0,//48.79217442020529,
+		y: 50.0,//2.402670292855805,
 	};
 	// RENDERING
 	Template::render("index", &context)
 }
+
+#[get("/hello/<name>/<age>")]
+fn hello(name: String, age: u8) -> String {
+    format!("Hello, {} year old named {}!", age, name)
+}
+
 
 #[post("/sigfox", format = "application/x-www-form-urlencoded", data= "<data>")]
 fn data(data: Option<Form<Data>>) {
@@ -117,23 +128,14 @@ fn data(data: Option<Form<Data>>) {
 		let conn = Connection::open("data.db").expect("data.db cannot be found.");
 
 		match data.station.as_ref() {
-			"26AB" => {
-				conn.execute(&format!("INSERT INTO _26AB (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance(data.rssi)), NO_PARAMS).unwrap();
+			"3ACB" => {
+					conn.execute(&format!("INSERT INTO _3ACB (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance(data.rssi)), NO_PARAMS).unwrap();
 			}
-			"87D9" => {
-				conn.execute(&format!("INSERT INTO _87D9 (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance(data.rssi)), NO_PARAMS).unwrap();
+			"3AC3" => {
+					conn.execute(&format!("INSERT INTO _3AC3 (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance(data.rssi)), NO_PARAMS).unwrap();
 			}
-			"B7E2" => {
-				conn.execute(&format!("INSERT INTO _B7E2 (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance(data.rssi)), NO_PARAMS).unwrap();
-			}
-			"0DD2" => {
-				conn.execute(&format!("INSERT INTO _0DD2 (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance(data.rssi)), NO_PARAMS).unwrap();
-			}
-			"0DE2" => {
-				conn.execute(&format!("INSERT INTO _0DE2 (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance(data.rssi)), NO_PARAMS).unwrap();
-			}
-			"0DE7" => {
-				conn.execute(&format!("INSERT INTO _0DE7 (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance(data.rssi)), NO_PARAMS).unwrap();
+			"BF94" => {
+					conn.execute(&format!("INSERT INTO _BF94 (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance(data.rssi)), NO_PARAMS).unwrap();
 			}
 			_ => {}
 		}
@@ -143,6 +145,7 @@ fn data(data: Option<Form<Data>>) {
 fn rocket() -> rocket::Rocket {
 	rocket::ignite()
 		.mount("/", routes![index, data])
+		.mount("/image", StaticFiles::from("/image")) 
 		.attach(Template::fairing())
 }
 
