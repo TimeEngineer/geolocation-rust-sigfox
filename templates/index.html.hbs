@@ -12,15 +12,15 @@
 
 
 <p>Salle 324</p>
-<canvas id="myCanvas" width="838" height="466" style="border:1px solid #d3d3d3;">
+<canvas id="myCanvas" width="863" height="490" style="border:1px solid #d3d3d3;">
 </canvas>
 
 <script>
   window.onload = function() {
   var ctx = document.getElementById("myCanvas").getContext("2d");
   var img = document.getElementById("carte");
-  var x0 = 60 + {{x}}; // 
-  var y0 = 395 - {{y}};
+  var x0 = 85 + 49 * {{x}}; // 
+  var y0 = 410 - 49 * {{y}};
 
   ctx.drawImage(img, 0, 0);
 
@@ -34,9 +34,7 @@
   ctx.fillText("X", x0, y0); 
   }
 
-  var loc = window.location.pathname;
-  console.log(loc);
 </script>
-<img id="carte" width="0" height="0" src="/image/325.png"></img>
+<img id="carte" width="0" height="0" src="/image/Esclangon324.png"></img>
 </body>
 </html>
