@@ -14,6 +14,9 @@ use rusqlite::NO_PARAMS;
 struct TemplateContext {
 	x: f64,
 	y: f64,
+	r1: f64,
+	r2: f64,
+	r3: f64,
 }
 
 #[derive(FromForm, Debug)]
@@ -22,40 +25,45 @@ struct Data {
 	rssi: f64,
 }
 
-fn newton_raphson(x: f64, y: f64, r1: f64, r2: f64, eps: f64) -> (f64, f64) {
+fn newton_raphson(x: f64, y: f64, r1: f64, r2: f64) -> (f64, f64) {
 	// Initialisation
-	let mut xk = 0.0;
-	let mut yk = 0.0;
+	let mut xk = 4.5;
+	let mut yk = 3.0;
+	// learning rate
+	let eta = 0.2;
 
 	// Variable d'écart
 	let mut dx = xk - x;
 	let mut dy = yk - y;
-	let a0 = xk * xk + yk * yk - r1 * r1;
-	let mut a1 = dx * dx + dy * dy - r2 * r2;
+	let mut f0 = xk * xk + yk * yk - r1 * r1;
+	let mut f1 = dx * dx + dy * dy - r2 * r2;
 	
-	while a0 * a0 + a1 * a1 > eps {
+	println!("Newton Raphson input: r1 = {:.4}, r2 = {:.4}", r1, r2);
+	for _ in 0..5 {
 		let c = 2.0 / (yk * x - xk * y);
-
 		// x(k+1) = x(k) - J^(-1) * f(xk)
-		xk = xk - c * (dy * a0 - yk * a1);
-		yk = yk - c * (-dx * a0 + xk * a1);
+		xk = xk - eta * c * (dy * f0 - yk * f1);
+		yk = yk - eta * c * (-dx * f0 + xk * f1);
+		println!("x/y: {:.4} {:.4}", xk, yk);
 
 		dx = xk - x;
 		dy = yk - y;
 
-		a1 = dx * dx + dy * dy - r2 * r2;
+		f0 = xk * xk + yk * yk - r1 * r1;
+		f1 = dx * dx + dy * dy - r2 * r2;
+		println!("eps: {:.4}", f0 * f0 + f1 * f1);
 	}
 
 	return (xk, yk);
 }
 
 fn get_position(r1: f64, r2: f64, r3: f64, eps: f64) -> (f64, f64) {
-	let x1 = 0.0;
-	let y1 = 0.0;
-	let x2 = 0.0;
-	let y2 = 0.0;
-	let x3 = 0.0;
-	let y3 = 0.0;
+	let x1 = 2.0;
+	let y1 = 1.0;
+	let x2 = 13.0;
+	let y2 = 6.0;
+	let x3 = 12.0;
+	let y3 = 1.0;
 
 	// On choisit (x1, y1) en tant que reference
 	let x2p = x2 - x1;
@@ -68,10 +76,8 @@ fn get_position(r1: f64, r2: f64, r3: f64, eps: f64) -> (f64, f64) {
 	let b = y1 - y2;
 	let c = x1 * y2 - y1 * x2;
 
-	let pos = newton_raphson(x2p, y2p, r1, r2, eps);
-	let x = pos.0;
-	let y = pos.1;
-
+	let (x, y) = newton_raphson(x2p, y2p, r1, r2);
+	
 	let d = (a * x + b * y + c) / (a * a + b * b);
 	let dnx = d * b;
 	let dny = d * a;
@@ -93,49 +99,58 @@ fn get_position(r1: f64, r2: f64, r3: f64, eps: f64) -> (f64, f64) {
 	}
 }
 
-fn distance(rssi: f64) -> f64 {
+fn distance_3ac3(rssi: f64) -> f64 {
+	return -0.35 * rssi - 30.0;
+}
+
+fn distance_3acb(rssi: f64) -> f64 {
+	return -0.83 * rssi - 37.5;
+}
+
+fn distance_bf94(rssi: f64) -> f64 {
 	return -1.35 * rssi - 70.67;
 }
 
 #[get("/")]
 fn index() -> Template {
-	// CONTEXT
-	// x : 0 ~ 750.0 == MIN ~ MAX
-	// y : 0 ~ 285.0 == MIN ~ MAX
-	// 50 pixels = 1 meter
+	// A: -102 -51 -56
+	// B: -94  -55 -58
+	// C: -102 -58 -57 
+
+	let r1 = distance_3ac3(-102.0);
+	let r2 = distance_3acb(-58.0);
+	let r3 = distance_bf94(-57.0);
+
+	println!("distance: {} {} {}\n", r1, r2, r3);
+	let (posx, posy) = get_position(r1+1.0, r2+1.0, r3, 3.0);
+	println!("{} {}", posx, posy);
 
 	let context = TemplateContext {
-		// x: 48.8534,
-		// y: 2.3488,
-		x: 50.0,//48.79217442020529,
-		y: 50.0,//2.402670292855805,
+		x: posx,
+		y: posy,
+		r1: r1,
+		r2: r2,
+		r3: r3,
 	};
 	// RENDERING
 	Template::render("index", &context)
 }
 
-#[get("/hello/<name>/<age>")]
-fn hello(name: String, age: u8) -> String {
-    format!("Hello, {} year old named {}!", age, name)
-}
-
-
 #[post("/sigfox", format = "application/x-www-form-urlencoded", data= "<data>")]
 fn data(data: Option<Form<Data>>) {
 	if let Some(data) = data {
 		println!("{:?}", data);
-		println!("{:?}", data.station);
 		let conn = Connection::open("data.db").expect("data.db cannot be found.");
 
 		match data.station.as_ref() {
-			"3ACB" => {
-					conn.execute(&format!("INSERT INTO _3ACB (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance(data.rssi)), NO_PARAMS).unwrap();
-			}
 			"3AC3" => {
-					conn.execute(&format!("INSERT INTO _3AC3 (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance(data.rssi)), NO_PARAMS).unwrap();
+					conn.execute(&format!("INSERT INTO _3AC3 (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance_3ac3(data.rssi)), NO_PARAMS).unwrap();
+			}
+			"3ACB" => {
+					conn.execute(&format!("INSERT INTO _3ACB (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance_3acb(data.rssi)), NO_PARAMS).unwrap();
 			}
 			"BF94" => {
-					conn.execute(&format!("INSERT INTO _BF94 (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance(data.rssi)), NO_PARAMS).unwrap();
+					conn.execute(&format!("INSERT INTO _BF94 (RSSI, DISTANCE) VALUES ({}, {});", data.rssi, distance_bf94(data.rssi)), NO_PARAMS).unwrap();
 			}
 			_ => {}
 		}
@@ -145,7 +160,7 @@ fn data(data: Option<Form<Data>>) {
 fn rocket() -> rocket::Rocket {
 	rocket::ignite()
 		.mount("/", routes![index, data])
-		.mount("/image", StaticFiles::from("/image")) 
+		.mount("/image", StaticFiles::from("./image")) 
 		.attach(Template::fairing())
 }
 

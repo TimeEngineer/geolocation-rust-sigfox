@@ -22,6 +22,21 @@
   var x0 = 85 + 49 * {{x}}; // 
   var y0 = 410 - 49 * {{y}};
 
+  // 3AC3
+  var x1 = 85 + 49 * 2; 
+  var y1 = 410 - 49 * 1;
+  var r1 = 49 * {{r1}};
+
+  // 3ACB
+  var x2 = 85 + 49 * 13;
+  var y2 = 410 - 49 * 6;
+  var r2 = 49 * {{r2}};
+
+  // BF94
+  var x3 = 85 + 49 * 12;
+  var y3 = 410 - 49 * 1;
+  var r3 = 49 * {{r3}};
+
   ctx.drawImage(img, 0, 0);
 
   ctx.fillStyle = "red";
@@ -32,6 +47,13 @@
   ctx.fillStyle = "blue";
   //ctx.textAlign = "center"
   ctx.fillText("X", x0, y0); 
+
+  ctx.arc(x1, y1, r1, 0, 2 * Math.PI);
+  ctx.stroke();
+  ctx.arc(x2, y2, r2, 0, 2 * Math.PI);
+  ctx.stroke();
+  ctx.arc(x3, y3, r3, 0, 2 * Math.PI);
+  ctx.stroke();
   }
 
 </script>
