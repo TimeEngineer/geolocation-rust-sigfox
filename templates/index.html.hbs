@@ -48,10 +48,11 @@
   //ctx.textAlign = "center"
   ctx.fillText("X", x0, y0); 
 
+  ctx.moveTo(x1 + r1, y1);
   ctx.arc(x1, y1, r1, 0, 2 * Math.PI);
-  ctx.stroke();
+  ctx.moveTo(x2 + r2, y1);
   ctx.arc(x2, y2, r2, 0, 2 * Math.PI);
-  ctx.stroke();
+  ctx.moveTo(x2 + r1, y1);
   ctx.arc(x3, y3, r3, 0, 2 * Math.PI);
   ctx.stroke();
   }

@@ -1,5 +1,9 @@
 # geolocation-rust-sigfox
 
-Copy image/324.png to root (/)
+## install rustup
+- https://www.rust-lang.org/tools/install
 
-geolocation-rust-sigfox/image/324.png => /image/324.png
+## setting up
+- `rustup update` (update if necessary)
+- `rustup default nightly` (set to nightly)
+- `ROCKET_ENV=<development|staging|production> cargo run` (compile and launch the server)
